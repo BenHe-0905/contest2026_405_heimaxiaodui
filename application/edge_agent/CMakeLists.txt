@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 
+# WiFi was removed for the ESP32-P4 (Ethernet-only); cmd_wifi hard-depends on
+# the wifi_manager component, so exclude it from the build.
+set(EXCLUDE_COMPONENTS "cmd_wifi")
+
 include("${CMAKE_SOURCE_DIR}/tools/cmake/esp_idf_patch.cmake")
 include("${CMAKE_SOURCE_DIR}/tools/cmake/flash_partition_defaults.cmake")
 

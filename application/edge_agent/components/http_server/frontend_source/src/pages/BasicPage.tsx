@@ -19,6 +19,7 @@ type BasicForm = {
   ap_password: string;
   ap_behavior: string;
   time_timezone: string;
+  weather_city: string;
 };
 
 export const BasicPage: Component<{ onRestartRequest: () => void }> = (props) => {
@@ -32,6 +33,7 @@ export const BasicPage: Component<{ onRestartRequest: () => void }> = (props) =>
       ap_password: config.ap_password ?? '',
       ap_behavior: config.ap_behavior ?? 'keep',
       time_timezone: config.time_timezone ?? '',
+      weather_city: config.weather_city ?? '',
     }),
     fromForm: (form) => ({
       wifi_ssid: form.wifi_ssid.trim(),
@@ -40,6 +42,7 @@ export const BasicPage: Component<{ onRestartRequest: () => void }> = (props) =>
       ap_password: form.ap_password,
       ap_behavior: form.ap_behavior,
       time_timezone: form.time_timezone.trim(),
+      weather_city: form.weather_city.trim(),
     }),
   });
   const [validationError, setValidationError] = createSignal<string | null>(null);
@@ -167,6 +170,13 @@ export const BasicPage: Component<{ onRestartRequest: () => void }> = (props) =>
               hint={timezoneHint()}
               value={tab.form.time_timezone}
               onInput={(event) => tab.setForm('time_timezone', event.currentTarget.value)}
+            />
+            <TextInput
+              full
+              label={t('weatherCity')}
+              placeholder={t('weatherCityPlaceholder') as string}
+              value={tab.form.weather_city}
+              onInput={(event) => tab.setForm('weather_city', event.currentTarget.value)}
             />
           </div>
         </CollapsibleConfigBlock>

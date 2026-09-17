@@ -61,6 +61,7 @@ typedef struct {
 #define APP_DEFAULT_LLM_VISIBLE_CAP_GROUPS   ""
 #define APP_DEFAULT_ENABLED_LUA_MODULES      ""
 #define APP_DEFAULT_TIME_TIMEZONE            "CST-8"
+#define APP_DEFAULT_WEATHER_CITY             "Beijing"
 
 static const app_config_field_t s_fields[] = {
     APP_CONFIG_FIELD(wifi_ssid, "wifi_ssid", APP_WIFI_SSID),
@@ -97,6 +98,7 @@ static const app_config_field_t s_fields[] = {
     APP_CONFIG_FIELD(llm_visible_cap_groups, "vis_cap_groups", APP_DEFAULT_LLM_VISIBLE_CAP_GROUPS),
     APP_CONFIG_FIELD(enabled_lua_modules, "en_lua_mods", APP_DEFAULT_ENABLED_LUA_MODULES),
     APP_CONFIG_FIELD(time_timezone, "time_timezone", APP_DEFAULT_TIME_TIMEZONE),
+    APP_CONFIG_FIELD(weather_city, "weather_city", APP_DEFAULT_WEATHER_CITY),
 };
 
 // for backward compatibility, migrate from old settings to new settings
@@ -592,4 +594,9 @@ void app_config_to_claw(const app_config_t *config, app_claw_config_t *out)
 const char *app_config_get_timezone(const app_config_t *config)
 {
     return config ? config->time_timezone : NULL;
+}
+
+const char *app_config_get_weather_city(const app_config_t *config)
+{
+    return config ? config->weather_city : NULL;
 }

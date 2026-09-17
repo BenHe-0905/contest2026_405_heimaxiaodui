@@ -144,11 +144,16 @@ static esp_err_t claw_session_mgr_ensure_dir(const char *path)
         return ESP_ERR_INVALID_ARG;
     }
     if (stat(path, &st) == 0) {
-        return S_ISDIR(st.st_mode) ? ESP_OK : ESP_FAIL;
+        if (S_ISDIR(st.st_mode)) {
+            return ESP_OK;
+        }
+        ESP_LOGE(TAG, "ensure_dir: %s exists but is not a directory", path);
+        return ESP_FAIL;
     }
     if (mkdir(path, 0755) == 0 || errno == EEXIST) {
         return ESP_OK;
     }
+    ESP_LOGE(TAG, "ensure_dir: mkdir %s failed: errno=%d (%s)", path, errno, strerror(errno));
     return ESP_FAIL;
 }
 

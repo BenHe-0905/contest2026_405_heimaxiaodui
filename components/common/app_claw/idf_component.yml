@@ -231,6 +231,12 @@ dependencies:
       - if: $CONFIG{APP_CLAW_LUA_MODULE_DISPLAY} == True
     path: ../../lua_modules/lua_module_display
 
+  lua_module_epaper:
+    rules:
+      - if: $CONFIG{APP_CLAW_CAP_LUA} == True
+      - if: $CONFIG{APP_CLAW_LUA_MODULE_EPAPER} == True
+    path: ../../lua_modules/lua_module_epaper
+
   lua_module_environmental_sensor:
     rules:
       - if: $CONFIG{APP_CLAW_CAP_LUA} == True

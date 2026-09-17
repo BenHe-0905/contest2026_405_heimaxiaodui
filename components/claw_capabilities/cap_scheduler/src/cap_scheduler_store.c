@@ -804,8 +804,13 @@ esp_err_t cap_scheduler_load_items(const char *path, cap_scheduler_item_t *items
     root = cJSON_Parse(buf);
     free(buf);
     if (!cJSON_IsArray(root)) {
+        /* Corrupt/empty file (0-byte, truncated, or non-array JSON) is benign:
+         * treat like a missing file so a bad write can never brick boot. The
+         * caller then rewrites a valid empty array via persist_definitions. */
+        ESP_LOGW(TAG, "Schedules file %s is not a JSON array (corrupt or empty); starting with 0 schedules", path);
         cJSON_Delete(root);
-        return ESP_ERR_INVALID_RESPONSE;
+        *out_count = 0;
+        return ESP_OK;
     }
 
     cJSON *node = NULL;

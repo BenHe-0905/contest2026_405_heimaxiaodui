@@ -228,6 +228,8 @@ export const en = {
   timezonePlaceholder: 'e.g. CST-8 (Beijing) or UTC0',
   timezoneHelp:
     "POSIX TZ string only. The sign is INVERTED relative to common UTC notation: Beijing (UTC+8) must be written as 'CST-8'; New York (UTC-5) is 'EST5'. Names like 'Asia/Shanghai' will NOT work — please convert manually.",
+  weatherCity: 'Weather Default City',
+  weatherCityPlaceholder: 'e.g. Beijing / Shanghai (used by the scheduled weather refresh)',
 
   memoryTitle: 'Memory Files',
   memoryDescription: 'Manage the device memory files.',

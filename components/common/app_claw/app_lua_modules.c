@@ -68,6 +68,9 @@
 #if CONFIG_APP_CLAW_LUA_MODULE_DISPLAY
 #include "lua_module_display.h"
 #endif
+#if CONFIG_APP_CLAW_LUA_MODULE_EPAPER
+#include "lua_module_epaper.h"
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_ENVIRONMENTAL_SENSOR
 #include "lua_module_environmental_sensor.h"
 #endif
@@ -456,6 +459,14 @@ static esp_err_t app_lua_register_display(const char *fatfs_base_path)
 }
 #endif
 
+#if CONFIG_APP_CLAW_LUA_MODULE_EPAPER
+static esp_err_t app_lua_register_epaper(const char *fatfs_base_path)
+{
+    (void)fatfs_base_path;
+    return lua_module_epaper_register();
+}
+#endif
+
 #if CONFIG_APP_CLAW_LUA_MODULE_ENVIRONMENTAL_SENSOR
 static esp_err_t app_lua_register_environmental_sensor(const char *fatfs_base_path)
 {
@@ -661,6 +672,9 @@ static const app_lua_module_entry_t s_lua_module_entries[] = {
 #if CONFIG_APP_CLAW_LUA_MODULE_DISPLAY
     { "display", "Display", app_lua_register_display },
 #endif
+#if CONFIG_APP_CLAW_LUA_MODULE_EPAPER
+    { "epaper", "EPaper", app_lua_register_epaper },
+#endif
 #if CONFIG_APP_CLAW_LUA_MODULE_ENVIRONMENTAL_SENSOR
     { "environmental_sensor", "Environmental Sensor", app_lua_register_environmental_sensor },
 #endif
@@ -773,6 +787,9 @@ static const app_lua_module_info_t s_lua_module_infos[] = {
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_DISPLAY
     { "display", "Display" },
+#endif
+#if CONFIG_APP_CLAW_LUA_MODULE_EPAPER
+    { "epaper", "EPaper" },
 #endif
 #if CONFIG_APP_CLAW_LUA_MODULE_ENVIRONMENTAL_SENSOR
     { "environmental_sensor", "Environmental Sensor" },

@@ -39,6 +39,7 @@ export type AppConfig = {
   llm_visible_cap_groups: string;
   enabled_lua_modules: string;
   time_timezone: string;
+  weather_city: string;
 };
 
 /** Server-side configuration groups (must stay in sync with
@@ -76,7 +77,7 @@ export const GROUP_FIELDS: Record<ConfigGroup, (keyof AppConfig)[]> = {
   search: ['search_brave_key', 'search_tavily_key', 'search_http_allowlist'],
   capabilities: ['enabled_cap_groups', 'llm_visible_cap_groups'],
   skills: ['enabled_lua_modules'],
-  time: ['time_timezone'],
+  time: ['time_timezone', 'weather_city'],
 };
 
 export function blankConfig(): Partial<AppConfig> {

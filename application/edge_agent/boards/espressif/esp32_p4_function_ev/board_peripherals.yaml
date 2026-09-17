@@ -58,22 +58,9 @@ peripherals:
       adjustable: 1
       owned_by_hw: 0
 
-  # DSI Configuration
-  - name: dsi_display
-    type: dsi
-    config:
-      bus_id: 0
-      data_lanes: 2
-      phy_clk_src: 0
-      lane_bit_rate_mbps: 1000
-
-  # Backlight Control
-  - name: ledc_backlight
-    type: ledc
-    version: default
-    config:
-      gpio_num: 26
-      speed_mode: LEDC_LOW_SPEED_MODE
-      channel: 1
-      timer_sel: 1
-      duty: 0
+  # NOTE: E-paper (Waveshare 3.5" 4-color, 184x384) pins are RESERVED and owned
+  # by lua_module_epaper (bit-bang SPI, configured in DEV_Config.h) — NOT by
+  # board_manager. Do not reuse these GPIOs for any device/peripheral below:
+  #   SCK=21  MOSI=22  CS=33  DC=32  RST=5  BUSY=20
+  # They are listed here so the pin map stays in one place; board_manager does
+  # not initialize them (the Lua module drives them directly via gpio_config).

@@ -12,7 +12,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "wifi_manager.h"
+#include "esp_netif.h"
+#include "esp_eth.h"
+#include "esp_eth_mac.h"
+#include "esp_eth_phy.h"
+#include "esp_event.h"
+#include <arpa/inet.h>
+#include "freertos/event_groups.h"
 #include "time.h"
 #include "nvs_flash.h"
 #include "http_server.h"
@@ -21,14 +27,15 @@
 #include "esp_check.h"
 #include "esp_system.h"
 #include "esp_board_manager_includes.h"
-#include "captive_dns.h"
-#include "cmd_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #if CONFIG_APP_CLAW_CAP_IM_WECHAT
 #include "cap_im_wechat.h"
 #endif
 #include "app_config.h"
+#include "screen_switcher.h"
+#include "cap_scheduler.h"
+#include "cap_lua.h"
 
 #define APP_ENABLE_MEM_LOG        (0)
 
@@ -61,38 +68,130 @@ static void app_free_runtime_state(void)
     s_config = NULL;
 }
 
-static void log_wifi_startup_config(const app_config_t *config)
-{
-    ESP_LOGI(TAG,
-             "Wi-Fi startup STA: ssid=%s pwd_len=%u",
-             config->wifi_ssid[0] ? config->wifi_ssid : "(empty)",
-             (unsigned)strlen(config->wifi_password));
+/* Ethernet state: the ESP32-P4 has no on-chip radio, so WiFi is replaced by
+ * the RMII EMAC + generic 802.3 PHY on the function EV board. */
+static esp_netif_t *s_eth_netif;
+static EventGroupHandle_t s_eth_event_group;
+static bool s_eth_link_up;
+static char s_eth_ip_str[16];
 
-    ESP_LOGI(TAG,
-             "Wi-Fi startup AP: ssid=%s pwd_len=%u behavior=%s",
-             config->ap_ssid[0] ? config->ap_ssid : "(auto:mac-suffix)",
-             (unsigned)strlen(config->ap_password),
-             config->ap_behavior[0] ? config->ap_behavior : "keep");
+#define ETH_GOT_IP_BIT BIT0
+
+static void eth_event_handler(void *arg, esp_event_base_t event_base,
+                              int32_t event_id, void *event_data)
+{
+    (void)arg;
+    (void)event_base;
+    (void)event_data;
+
+    switch (event_id) {
+    case ETHERNET_EVENT_CONNECTED:
+        s_eth_link_up = true;
+        ESP_LOGI(TAG, "Ethernet link up");
+        break;
+    case ETHERNET_EVENT_DISCONNECTED:
+        s_eth_link_up = false;
+        s_eth_ip_str[0] = '\0';
+        ESP_LOGW(TAG, "Ethernet link down");
+        app_claw_set_network_status(false, NULL);
+        break;
+    case ETHERNET_EVENT_START:
+        ESP_LOGI(TAG, "Ethernet started");
+        break;
+    case ETHERNET_EVENT_STOP:
+        ESP_LOGW(TAG, "Ethernet stopped");
+        break;
+    default:
+        break;
+    }
 }
 
-static void on_wifi_state_changed(bool connected, void *user_ctx)
+static void eth_got_ip_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data)
 {
-    (void)user_ctx;
+    (void)arg;
+    (void)event_base;
+    (void)event_id;
 
-    wifi_manager_status_t status = {0};
-    wifi_manager_get_status(&status);
-    const char *ap_ssid = status.ap_active ? status.ap_ssid : NULL;
+    ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+    esp_ip4addr_ntoa(&event->ip_info.ip, s_eth_ip_str, sizeof(s_eth_ip_str));
+    ESP_LOGI(TAG, "Ethernet got IP: %s", s_eth_ip_str);
+    app_claw_set_network_status(true, NULL);
+    xEventGroupSetBits(s_eth_event_group, ETH_GOT_IP_BIT);
+}
 
-    ESP_LOGI(TAG, "Wi-Fi state: sta_connected=%d ap_active=%d mode=%s ap_ssid=%s",
-             connected,
-             status.ap_active,
-             status.mode ? status.mode : "off",
-             ap_ssid ? ap_ssid : "(none)");
+static esp_err_t eth_init(void)
+{
+    /* wifi_manager_init() used to provide netif/event-loop init; with WiFi
+     * removed, Ethernet takes over that responsibility. */
+    ESP_RETURN_ON_ERROR(esp_netif_init(), TAG, "esp_netif_init failed");
+    ESP_RETURN_ON_ERROR(esp_event_loop_create_default(), TAG,
+                        "esp_event_loop_create_default failed");
 
-    esp_err_t err = app_claw_set_network_status(connected, ap_ssid);
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Failed to update network UI: %s", esp_err_to_name(err));
+    s_eth_event_group = xEventGroupCreate();
+    ESP_RETURN_ON_FALSE(s_eth_event_group, ESP_ERR_NO_MEM, TAG, "eth event group create failed");
+
+    esp_netif_config_t netif_cfg = ESP_NETIF_DEFAULT_ETH();
+    s_eth_netif = esp_netif_new(&netif_cfg);
+    ESP_RETURN_ON_FALSE(s_eth_netif, ESP_FAIL, TAG, "esp_netif_new failed");
+
+    eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
+    eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
+    eth_esp32_emac_config_t emac_config = ETH_ESP32_EMAC_DEFAULT_CONFIG();
+
+    esp_eth_mac_t *mac = esp_eth_mac_new_esp32(&emac_config, &mac_config);
+    ESP_RETURN_ON_FALSE(mac, ESP_FAIL, TAG, "Ethernet MAC create failed");
+
+    esp_eth_phy_t *phy = esp_eth_phy_new_generic(&phy_config);
+    if (!phy) {
+        ESP_LOGE(TAG, "Ethernet PHY create failed");
+        mac->del(mac);
+        return ESP_FAIL;
     }
+
+    esp_eth_handle_t eth_handle = NULL;
+    esp_eth_config_t eth_config = ETH_DEFAULT_CONFIG(mac, phy);
+    ESP_ERROR_CHECK(esp_eth_driver_install(&eth_config, &eth_handle));
+
+    ESP_ERROR_CHECK(esp_netif_attach(s_eth_netif, esp_eth_new_netif_glue(eth_handle)));
+
+    ESP_ERROR_CHECK(esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID,
+                                               &eth_event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP,
+                                               &eth_got_ip_handler, NULL));
+
+    ESP_ERROR_CHECK(esp_eth_start(eth_handle));
+    ESP_LOGI(TAG, "Ethernet started, waiting for DHCP IP ...");
+
+    EventBits_t bits = xEventGroupWaitBits(s_eth_event_group, ETH_GOT_IP_BIT,
+                                           pdFALSE, pdFALSE, pdMS_TO_TICKS(10000));
+    if (bits & ETH_GOT_IP_BIT) {
+        ESP_LOGI(TAG, "Ethernet ready (DHCP): %s", s_eth_ip_str);
+        return ESP_OK;
+    }
+
+    ESP_LOGW(TAG, "DHCP timeout, falling back to static IP 192.168.1.10");
+    esp_netif_dhcpc_stop(s_eth_netif);
+    esp_netif_ip_info_t ip_info;
+    ip_info.ip.addr = inet_addr("192.168.1.10");
+    ip_info.netmask.addr = inet_addr("255.255.255.0");
+    ip_info.gw.addr = inet_addr("192.168.1.1");
+    ESP_ERROR_CHECK(esp_netif_set_ip_info(s_eth_netif, &ip_info));
+
+    /* 静态回退路径没有 DHCP 下发 DNS，必须显式设置，否则 SNTP(pool.ntp.org)
+     * 和 LLM HTTPS(api.deepseek.com) 都解析不了域名。 */
+    esp_netif_dns_info_t dns_info = {0};
+    dns_info.ip.type = IPADDR_TYPE_V4;
+    dns_info.ip.u_addr.ip4.addr = inet_addr("223.5.5.5");      /* AliDNS，国内快 */
+    ESP_ERROR_CHECK(esp_netif_set_dns_info(s_eth_netif, ESP_NETIF_DNS_MAIN, &dns_info));
+    dns_info.ip.u_addr.ip4.addr = inet_addr("114.114.114.114"); /* 114DNS，备份 */
+    ESP_ERROR_CHECK(esp_netif_set_dns_info(s_eth_netif, ESP_NETIF_DNS_BACKUP, &dns_info));
+
+    strlcpy(s_eth_ip_str, "192.168.1.10", sizeof(s_eth_ip_str));
+    s_eth_link_up = true;
+    app_claw_set_network_status(true, NULL);
+    ESP_LOGI(TAG, "Ethernet ready (static): %s", s_eth_ip_str);
+    return ESP_OK;
 }
 
 static esp_err_t main_load_config(app_config_t *config)
@@ -174,14 +273,12 @@ static esp_err_t main_get_wifi_status(http_server_wifi_status_t *status)
 {
     ESP_RETURN_ON_FALSE(status, ESP_ERR_INVALID_ARG, TAG, "status is NULL");
 
-    wifi_manager_status_t wifi_status = {0};
-    wifi_manager_get_status(&wifi_status);
-    status->wifi_connected = wifi_status.sta_connected;
-    status->ip = wifi_status.sta_ip;
-    status->ap_active = wifi_status.ap_active;
-    status->ap_ssid = wifi_status.ap_ssid;
-    status->ap_ip = wifi_status.ap_ip;
-    status->wifi_mode = wifi_status.mode;
+    status->wifi_connected = s_eth_link_up && s_eth_ip_str[0] != '\0';
+    status->ip = s_eth_ip_str[0] ? s_eth_ip_str : NULL;
+    status->ap_active = false;
+    status->ap_ssid = NULL;
+    status->ap_ip = NULL;
+    status->wifi_mode = "ethernet";
     return ESP_OK;
 }
 
@@ -313,6 +410,34 @@ static void memory_monitor_task(void *arg)
 
 #endif
 
+/* 开机填充「待办」屏缓存：show_schedule.lua 自包含（读本地 JSON + 画屏 +
+ * save_schedule_cache，不依赖 LLM/网络），直接同步跑一遍即可让第 3 页在首次
+ * 按键切换时就显示真实日程，而非回退静态占位。技能烘焙在只读 system 分区
+ * （/system/skills/…），故走绝对路径。放独立任务里：epaper 由 screen_switcher
+ * 与 Lua 侧共享互斥锁，启动阶段给它留出稳定时间，避免抢锁/未初始化竞态。 */
+#define SCHEDULE_CACHE_BOOT_SCRIPT "/system/skills/schedule_manager/scripts/show_schedule.lua"
+#define SCHEDULE_CACHE_BOOT_DELAY_MS 500
+#define SCHEDULE_CACHE_BOOT_TIMEOUT_MS 15000
+
+static void schedule_cache_boot_task(void *arg)
+{
+    vTaskDelay(pdMS_TO_TICKS(SCHEDULE_CACHE_BOOT_DELAY_MS));
+
+    char output[512];
+    output[0] = '\0';
+    esp_err_t err = cap_lua_run_script(SCHEDULE_CACHE_BOOT_SCRIPT, "{}",
+                                       SCHEDULE_CACHE_BOOT_TIMEOUT_MS,
+                                       output, sizeof(output));
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "开机填充待办缓存失败 (%s): %s",
+                 esp_err_to_name(err), output[0] ? output : "(no output)");
+    } else {
+        ESP_LOGI(TAG, "开机填充待办缓存完成: %s", output[0] ? output : "(no output)");
+    }
+
+    vTaskDelete(NULL);
+}
+
 void app_main(void)
 {
     esp_log_level_set("esp-x509-crt-bundle", ESP_LOG_WARN);
@@ -336,7 +461,7 @@ void app_main(void)
     ESP_ERROR_CHECK(claw_paths_set(CLAW_PATH_DATA, app_fs_storage_base_path()));
     ESP_ERROR_CHECK(claw_paths_set(CLAW_PATH_SYSTEM, app_fs_system_base_path()));
 
-    ESP_ERROR_CHECK(wifi_manager_init());
+    ESP_ERROR_CHECK(eth_init());
 
     ESP_ERROR_CHECK(app_claw_ui_start());
 
@@ -355,59 +480,7 @@ void app_main(void)
 #endif
         },
     }));
-    ESP_ERROR_CHECK(wifi_manager_register_state_callback(on_wifi_state_changed, NULL));
-
-    log_wifi_startup_config(s_config);
-
-    esp_err_t wifi_err = wifi_manager_start(&(wifi_manager_config_t) {
-        .sta_ssid = s_config->wifi_ssid,
-        .sta_password = s_config->wifi_password,
-        .ap_ssid = s_config->ap_ssid[0] ? s_config->ap_ssid : NULL,
-        .ap_password = s_config->ap_password[0] ? s_config->ap_password : NULL,
-        .ap_behavior = s_config->ap_behavior,
-    });
-    if (wifi_err != ESP_OK) {
-        ESP_LOGE(TAG, "Wi-Fi start failed: %s", esp_err_to_name(wifi_err));
-    } else {
-        ESP_ERROR_CHECK(http_server_start());
-        if (captive_dns_start(&(captive_dns_config_t) {
-                .ap_netif = wifi_manager_get_ap_netif(),
-                .configure_dhcp_dns = true,
-            }) != ESP_OK) {
-            ESP_LOGW(TAG, "Captive DNS could not start, portal pop-up disabled");
-        }
-
-        if (s_config->wifi_ssid[0] != '\0') {
-            esp_err_t wait_err = wifi_manager_wait_connected(30000);
-            if (wait_err == ESP_OK) {
-                wifi_manager_status_t status = {0};
-                wifi_manager_get_status(&status);
-                ESP_LOGI(TAG, "Wi-Fi STA ready: %s", status.sta_ip);
-            } else if (wait_err == ESP_ERR_TIMEOUT) {
-                wifi_manager_status_t status = {0};
-                wifi_manager_get_status(&status);
-                ESP_LOGW(TAG,
-                         "Wi-Fi STA not connected within wait window; retrying in background: mode=%s ap_active=%d ap_ip=%s",
-                         status.mode ? status.mode : "off",
-                         status.ap_active,
-                         status.ap_ip ? status.ap_ip : "0.0.0.0");
-            } else {
-                ESP_LOGW(TAG, "Wi-Fi STA wait returned error: %s", esp_err_to_name(wait_err));
-            }
-        }
-
-        wifi_manager_status_t status = {0};
-        wifi_manager_get_status(&status);
-        if (status.ap_active) {
-            const char *portal_auth = s_config->ap_password[0] ? "wpa2" : "open";
-            ESP_LOGW(TAG,
-                     "*** Provisioning portal: SSID=\"%s\" (auth=%s) IP=%s URL=http://%s/ ***",
-                     status.ap_ssid,
-                     portal_auth,
-                     status.ap_ip,
-                     status.ap_ip);
-        }
-    }
+    ESP_ERROR_CHECK(http_server_start());
 
     ESP_ERROR_CHECK(app_claw_set_save_config_callback(main_save_claw_config, NULL));
     ESP_ERROR_CHECK(app_claw_start(s_claw_config));
@@ -415,7 +488,50 @@ void app_main(void)
     ESP_ERROR_CHECK(http_server_webim_bind_im());
 #endif
 
-    register_wifi_command();
+    /* BOOT 键循环切屏：开机显示工卡屏，按键在 工卡→天气日历→待办 间循环。
+     * 放在 app_claw_start() 之后：epaper 组件已就绪，内部自初始化 EPD 硬件。 */
+    screen_switcher_start(0);
+
+    /* 开机异步填充「待办」屏缓存（show_schedule.lua），让第 3 页首次切换即显真实日程。 */
+    xTaskCreate(schedule_cache_boot_task, "sched_cache", 6144, NULL, 5, NULL);
+
+    /* 天气屏定时刷新：每小时唤起 agent，web_search 真实天气后调 show_weather.lua
+     * 画屏存缓存(不刷当前屏)。注册后立即 trigger_now 触发首次生成，尽快填缓存。
+     * 路由规则 im_any_message_agent 已匹配 event_type=message/content_type=text。 */
+    {
+        static const char *WEATHER_SCHED_ID = "weather_hourly";
+        const char *city = app_config_get_weather_city(s_config);
+        if (city == NULL || city[0] == '\0') {
+            city = "Beijing";
+        }
+        cap_scheduler_item_t item = {};
+        item.kind = CAP_SCHEDULER_ITEM_INTERVAL;
+        item.enabled = true;
+        item.interval_ms = 60 * 60 * 1000;  /* 每小时 */
+        strncpy(item.id, WEATHER_SCHED_ID, sizeof(item.id) - 1);
+        strncpy(item.event_type, "message", sizeof(item.event_type) - 1);
+        strncpy(item.content_type, "text", sizeof(item.content_type) - 1);
+        strncpy(item.source_channel, "system", sizeof(item.source_channel) - 1);
+        snprintf(item.text, sizeof(item.text),
+                 "定时刷新天气屏：先用 web_search 搜 %s 今天天气，解析天气/温度/风力，"
+                 "再运行 weather skill 的 show_weather.lua 画屏存缓存；"
+                 "拿不到真实数据就回复天气暂不可用，不要编造。",
+                 city);
+        esp_err_t sched_err = cap_scheduler_add(&item);
+        if (sched_err == ESP_ERR_INVALID_STATE) {
+            /* 重启后 schedules.json 已持久化 weather_hourly，add 返回 INVALID_STATE；
+             * 回退 update 整体覆盖 item，让新配置的 weather_city 刷新进 text。 */
+            sched_err = cap_scheduler_update(&item);
+        }
+        if (sched_err != ESP_OK) {
+            ESP_LOGW(TAG, "注册天气屏定时刷新失败: %s", esp_err_to_name(sched_err));
+        } else {
+            esp_err_t trig_err = cap_scheduler_trigger_now(WEATHER_SCHED_ID);
+            if (trig_err != ESP_OK) {
+                ESP_LOGW(TAG, "天气屏首次触发失败: %s", esp_err_to_name(trig_err));
+            }
+        }
+    }
 
 #if APP_ENABLE_MEM_LOG
     /* Start memory monitor: print internal free, min free, PSRAM free every 20s */

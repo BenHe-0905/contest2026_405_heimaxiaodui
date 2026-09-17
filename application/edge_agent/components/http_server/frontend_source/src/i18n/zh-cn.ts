@@ -221,6 +221,8 @@ export const zhCn: Dict = {
   timezonePlaceholder: '例如 CST-8（北京时间）或 UTC0',
   timezoneHelp:
     '仅接受 POSIX TZ 字符串，符号与日常 UTC 表示相反。北京时间（UTC+8）应写作 "CST-8"，纽约（UTC-5）写作 "EST5"。可在此表格查阅 IANA 时区与 POSIX 表达转换关系。',
+  weatherCity: '天气默认城市',
+  weatherCityPlaceholder: '例如 Beijing / Shanghai（定时刷新天气屏时使用）',
 
   memoryTitle: '记忆文件',
   memoryDescription: '管理设备记忆文件。',

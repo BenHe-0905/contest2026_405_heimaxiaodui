@@ -7,11 +7,15 @@ dependencies:
   app_claw:
     path: ../../../components/common/app_claw
 
+  cap_im_platform:
+    rules:
+      - if: >-
+          $CONFIG{APP_CLAW_CAP_IM_FEISHU} == True || $CONFIG{APP_CLAW_CAP_IM_QQ} == True ||
+          $CONFIG{APP_CLAW_CAP_IM_TG} == True || $CONFIG{APP_CLAW_CAP_IM_WECHAT} == True
+    path: ../../../components/claw_capabilities/cap_im_platform
+
   app_config:
     path: ../components/app_config
-
-  captive_dns:
-    path: ../../../components/common/captive_dns
 
   espressif/ramfs:
     version: "^0.1"
@@ -32,9 +36,6 @@ dependencies:
 
   settings:
     path: ../../../components/common/settings
-
-  wifi_manager:
-    path: ../../../components/common/wifi_manager
 
   esp_video:
     path: ../../../components/common/esp_video

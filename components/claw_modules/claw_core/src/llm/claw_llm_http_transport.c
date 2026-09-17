@@ -302,7 +302,15 @@ esp_err_t claw_llm_http_post_json(const claw_llm_http_json_request_t *request,
     config.timeout_ms = request->timeout_ms;
     config.buffer_size = 4096;
     config.buffer_size_tx = 4096;
+#if defined(CONFIG_ESP_TLS_INSECURE) && defined(CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY)
+    /* 开发期调试：跳过 TLS 服务器证书校验，绕过 esp_crt_bundle 无法校验
+     * api.deepseek.com 证书链导致的 ESP_ERR_HTTP_CONNECT。仅当显式启用上述
+     * 两个 Kconfig 选项时生效；不挂证书包 → esp-tls 走默认跳过校验路径
+     * (authmode = MBEDTLS_SSL_VERIFY_NONE)。⚠ 生产务必关闭 CONFIG_ESP_TLS_INSECURE。 */
+    config.crt_bundle_attach = NULL;
+#else
     config.crt_bundle_attach = esp_crt_bundle_attach;
+#endif
 #ifdef CONFIG_HTTP_REUSE_ENABLE
     config.keep_alive_enable = true;
 #endif

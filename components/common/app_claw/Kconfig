@@ -333,6 +333,14 @@ menu "App Claw Config"
                 Enable the display Lua module and keep app_claw's direct dependency
                 on lua_module_display when Lua capability is enabled.
 
+        config APP_CLAW_LUA_MODULE_EPAPER
+            bool "Enable e-paper Lua module"
+            default n
+            help
+                Enable the e-paper Lua module and keep app_claw's direct dependency
+                on lua_module_epaper when Lua capability is enabled. Drives the
+                Waveshare 3.5" 4-color e-ink panel via bit-bang SPI.
+
         config APP_CLAW_LUA_MODULE_ENVIRONMENTAL_SENSOR
             bool "Enable environmental sensor Lua module"
             default n

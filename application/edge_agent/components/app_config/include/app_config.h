@@ -54,6 +54,7 @@ typedef struct {
     char llm_visible_cap_groups[APP_CONFIG_STR_LEN];
     char enabled_lua_modules[APP_CONFIG_STR_LEN];
     char time_timezone[APP_CONFIG_TIMEZONE_LEN];
+    char weather_city[APP_CONFIG_TIMEZONE_LEN];
 } app_config_t;
 
 esp_err_t app_config_init(void);
@@ -63,6 +64,7 @@ esp_err_t app_config_save(const app_config_t *config);
 esp_err_t app_config_validate_wifi(const app_config_t *config, const char **message);
 void app_config_to_claw(const app_config_t *config, app_claw_config_t *out);
 const char *app_config_get_timezone(const app_config_t *config);
+const char *app_config_get_weather_city(const app_config_t *config);
 
 #ifdef __cplusplus
 }
