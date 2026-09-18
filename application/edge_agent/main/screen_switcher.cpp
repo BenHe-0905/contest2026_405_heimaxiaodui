@@ -93,3 +93,10 @@ void screen_switcher_start(int start_index)
     ESP_LOGI(TAG, "按键切屏就绪：GPIO%d，当前 [%d] %s",
              BUTTON_GPIO, s_index, ui_screen_names[s_index]);
 }
+
+void screen_switcher_refresh_schedule(void)
+{
+    if (s_index == 2) {
+        show_screen(2);
+    }
+}

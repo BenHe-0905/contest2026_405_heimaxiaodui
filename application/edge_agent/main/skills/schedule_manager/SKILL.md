@@ -105,7 +105,8 @@ cache (it does **not** immediately take over the screen); the BOOT-key switcher
 shows the cached frame when the user switches to the 待办 screen (page 3). ASCII
 only. Takes no arguments: it always renders the current date's schedules plus any
 one-off (`once`) schedules falling within the next 3 days, grouped by date. Daily
-and weekly schedules are shown under today's heading.
+and weekly schedules are shown under today's heading. Past items (today's time
+already passed) are drawn entirely in red; upcoming items are drawn in black.
 
 ### Script Args Schema
 

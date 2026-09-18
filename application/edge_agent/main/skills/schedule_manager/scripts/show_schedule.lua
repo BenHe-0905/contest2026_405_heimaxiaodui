@@ -8,9 +8,9 @@
 --
 -- Layout (black / white / yellow / red):
 --   yellow top bar "TODAY" + short date; full date + weekday; full-width rule;
---   per-item color marker block; next-up (time >= now) highlighted in red;
---   future dates grouped under a yellow band; Font8 footer with today/upcoming
---   counts.
+--   per-item color marker block; past items (time < now) drawn red, upcoming
+--   items black; future dates grouped under a yellow band; Font8 footer with
+--   today/upcoming counts.
 -- --------------------------------------------------------------
 
 local storage = require("storage")
@@ -35,7 +35,6 @@ local CONTINUE_INDENT = "      "  -- 6 空格，续行对齐标签起始列（x=
 
 local W = 184                     -- 面板宽度
 local ADVANCE = { [8] = 5, [16] = 11, [24] = 17 }  -- 等宽字体单字宽
-local TIME_WIDTH_CHARS = 6        -- "HH:MM " 宽度，标签列起始 = 10 + 6*11 = 76
 local WEEKDAY3 = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
 
 -- 读取日程列表
@@ -205,17 +204,6 @@ local function run()
         end
     end
 
-    -- 今日 bucket 中 time >= now 的最早一条 = 「下一条」，红色高亮
-    local next_up = nil
-    for _, item in ipairs(visible) do
-        if bucket_date(item, today_str) == today_str then
-            local t = item.time or "99:99"
-            if t >= now_hhmm and (next_up == nil or t < (next_up.time or "99:99")) then
-                next_up = item
-            end
-        end
-    end
-
     -- 绘制
     epaper.init()
     epaper.clear(COLOR_WHITE)
@@ -259,8 +247,10 @@ local function run()
                 end
             end
 
-            local is_next = (item == next_up)
             local time_str = item.time or "??:??"
+            -- 时间已过 = 今日 bucket 且 time < now（HH:MM 零填充，字典序 = 时间序）
+            local is_past = (bdate == today_str) and ((item.time or "99:99") < now_hhmm)
+            local item_color = is_past and COLOR_RED or COLOR_BLACK
             local label = sanitize_ascii(item.title_ascii)
             local segments = wrap_text(label, LABEL_WIDTH_CHARS)
 
@@ -276,23 +266,16 @@ local function run()
                 end
             end
 
-            -- marker 色：下一条红，其余黄
-            local marker_color = is_next and COLOR_RED or COLOR_YELLOW
+            -- marker 与整条文字同色：已过红，未开始黑
             for i, seg in ipairs(segments) do
                 if y >= bottom then
                     break  -- 当前条剩余行画不下，跳出（已画的行保留）
                 end
                 if i == 1 then
-                    epaper.fill_rect(0, y + 1, 4, 14, marker_color)
-                    if is_next then
-                        -- 时间红色 + 标签黑色，分开绘制
-                        epaper.text(time_str .. " ", 10, y, FONT_BODY, COLOR_RED)
-                        epaper.text(seg, 10 + TIME_WIDTH_CHARS * ADVANCE[FONT_BODY], y, FONT_BODY, COLOR_BLACK)
-                    else
-                        epaper.text(time_str .. " " .. seg, 10, y, FONT_BODY, COLOR_BLACK)
-                    end
+                    epaper.fill_rect(0, y + 1, 4, 14, item_color)
+                    epaper.text(time_str .. " " .. seg, 10, y, FONT_BODY, item_color)
                 else
-                    epaper.text(CONTINUE_INDENT .. seg, 10, y, FONT_BODY, COLOR_BLACK)
+                    epaper.text(CONTINUE_INDENT .. seg, 10, y, FONT_BODY, item_color)
                 end
                 y = y + LINE_GAP
             end

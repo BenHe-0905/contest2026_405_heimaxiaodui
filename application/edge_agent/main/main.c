@@ -415,7 +415,7 @@ static void memory_monitor_task(void *arg)
  * 按键切换时就显示真实日程，而非回退静态占位。技能烘焙在只读 system 分区
  * （/system/skills/…），故走绝对路径。放独立任务里：epaper 由 screen_switcher
  * 与 Lua 侧共享互斥锁，启动阶段给它留出稳定时间，避免抢锁/未初始化竞态。 */
-#define SCHEDULE_CACHE_BOOT_SCRIPT "/system/skills/schedule_manager/scripts/show_schedule.lua"
+#define SCHEDULE_CACHE_SCRIPT "/system/skills/schedule_manager/scripts/show_schedule.lua"
 #define SCHEDULE_CACHE_BOOT_DELAY_MS 500
 #define SCHEDULE_CACHE_BOOT_TIMEOUT_MS 15000
 
@@ -425,7 +425,7 @@ static void schedule_cache_boot_task(void *arg)
 
     char output[512];
     output[0] = '\0';
-    esp_err_t err = cap_lua_run_script(SCHEDULE_CACHE_BOOT_SCRIPT, "{}",
+    esp_err_t err = cap_lua_run_script(SCHEDULE_CACHE_SCRIPT, "{}",
                                        SCHEDULE_CACHE_BOOT_TIMEOUT_MS,
                                        output, sizeof(output));
     if (err != ESP_OK) {
@@ -436,6 +436,31 @@ static void schedule_cache_boot_task(void *arg)
     }
 
     vTaskDelete(NULL);
+}
+
+/* 每小时自动重渲染待办屏缓存并刷新显示：show_schedule.lua 自包含（读本地 JSON
+ * + 画屏 + save_schedule_cache），直接同步跑即可，不依赖 LLM/网络。跑完后若当前
+ * 正显示待办屏，则 screen_switcher_refresh_schedule() 重读缓存刷屏，让过期/未开始
+ * 的颜色状态随时间自动更新。 */
+static void schedule_cache_refresh_task(void *arg)
+{
+    const TickType_t one_hour = pdMS_TO_TICKS(60 * 60 * 1000);
+    for (;;) {
+        vTaskDelay(one_hour);
+
+        char output[512];
+        output[0] = '\0';
+        esp_err_t err = cap_lua_run_script(SCHEDULE_CACHE_SCRIPT, "{}",
+                                           SCHEDULE_CACHE_BOOT_TIMEOUT_MS,
+                                           output, sizeof(output));
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "每小时刷新待办缓存失败 (%s): %s",
+                     esp_err_to_name(err), output[0] ? output : "(no output)");
+        } else {
+            ESP_LOGI(TAG, "每小时刷新待办缓存完成: %s", output[0] ? output : "(no output)");
+            screen_switcher_refresh_schedule();
+        }
+    }
 }
 
 void app_main(void)
@@ -494,6 +519,9 @@ void app_main(void)
 
     /* 开机异步填充「待办」屏缓存（show_schedule.lua），让第 3 页首次切换即显真实日程。 */
     xTaskCreate(schedule_cache_boot_task, "sched_cache", 6144, NULL, 5, NULL);
+
+    /* 每小时自动刷新待办内容与待办屏显示（重渲染缓存 + 若在待办屏则刷屏）。 */
+    xTaskCreate(schedule_cache_refresh_task, "sched_refresh", 6144, NULL, 5, NULL);
 
     /* 天气屏定时刷新：每小时唤起 agent，web_search 真实天气后调 show_weather.lua
      * 画屏存缓存(不刷当前屏)。注册后立即 trigger_now 触发首次生成，尽快填缓存。
