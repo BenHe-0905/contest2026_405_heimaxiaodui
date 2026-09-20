@@ -1,201 +1,60 @@
-<div align="center">
+# 智能电子工卡
 
-  <a href="https://esp-claw.com/en/">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="./docs/src/assets/logos/logo-f.svg" />
-      <source media="(prefers-color-scheme: light)" srcset="./docs/src/assets/logos/logo.svg" />
-      <img alt="ESP-Claw logo" src="./docs/src/assets/logos/logo.svg" width="50%" />
-    </picture>
-  </a>
+> 队伍：闪灵（Shining）
 
-  <h1>ESP-Claw 🦞 AI Agent Framework for IoT Devices</h1>
+## 一、作品简介
 
-  <h3>💬 Chat as Creation · 🚀 Millisecond Response · 🧩 Smart and Extensible · 😋 Grows with You</h3>
+**智能电子工卡** 是一款基于 **ESP32-P4** 与 **4 色墨水屏** 的边缘智能工卡设备，在
+**ESP-Claw（Espressif「聊天造物」框架）** 上开发。它把传统纸质工卡升级为一块会「看天气、
+记日程、报时间」的 AI 桌面信息屏：Agent Loop 直接在端侧芯片上运行，以对话定义设备行为，
+用墨水屏把工卡信息与天气、日程、待办等卡片直观呈现，配合音频完成晨间播报与整点报时。
 
-  <p>
-    <a href="https://www.espressif.com">
-      <img src="https://img.shields.io/badge/runs_on-ESP32_Series-red?style=flat-square" alt="Runs on ESP32 Series" />
-    </a>
-    <a href="./LICENSE">
-      <img src="https://img.shields.io/github/license/espressif/esp-claw?style=flat-square" alt="License" />
-    </a>
-  </p>
+核心亮点：
 
-  <a href="https://esp-claw.com/en/">Home</a>
-  |
-  <a href="https://esp-claw.com/en/tutorial/">Docs</a>
-  |
-  <a href="https://esp-claw.com/en/flash/">Online Flashing</a>
-  |
-  <a href="https://esp-claw.com/en/reference-project/build-from-source/">Build from Source</a>
-  |
-  <a href="./README_CN.md">简体中文</a>
+- **工卡信息屏**：工卡 + 天气 + 日程 + 待办多屏卡片，自动刷新（`ui_screens.c` + `gen_ui_screens.py` 生成）
+- **6 个设备技能（skill）**：天气、日程管理、晨间播报、整点报时、墨水屏显图、SD 卡存储
+- **DeepSeek 大模型接入**：Agent Loop 经 openai_compatible 后端对接 DeepSeek（可配置）
+- **外设点亮**：摄像头（SC2336）、音频（ES8311）、墨水屏、SD 卡均可被 AI 当作工具调用
 
-</div>
+## 二、选题方向
 
-**ESP-Claw** is Espressif's **Chat Coding** AI agent framework for IoT devices. It defines device behavior through conversation and completes the full loop of sensing, decision-making, and execution locally on Espressif chips. Inspired by the OpenClaw concept and reimplemented in C, ESP-Claw is lightweight, intelligent, and continuously evolving. With just an ESP32-series chip that costs only a few dollars, you can experience what makes ESP-Claw so nimble.
+**AI 硬件产品创新**
 
-<div align="center">
-  <img alt="From traditional IoT to Edge Agent" src="./docs/static/from-traditional-iot-to-edge-agent.webp" width="90%" />
-</div>
+理由：作品是一台跑在端侧芯片上的 AI 智能体设备，以「智能工卡」为产品形态，Agent Loop 直接在
+ESP32-P4 上运行，用墨水屏呈现工卡与信息卡片，属典型 AI 硬件产品。
 
-## 🌟 Key Features
+## 三、目录结构
 
-Traditional IoT usually stops at connectivity: devices can connect to the network, but they cannot think; they can execute commands, but they cannot make decisions. ESP-Claw brings the Agent Runtime down onto Espressif chips, turning them from passive executors into active decision-making centers.
+- `application/edge_agent/` — 主固件应用（本作品核心代码）
+  - `main/` — 入口 `main.c`、墨水屏 UI `ui_screens.c`、屏幕切换 `screen_switcher.cpp`
+  - `main/skills/` — 6 个技能：`weather` / `schedule_manager` / `announce_morning` / `announce_time` / `epaper_show_image` / `sd_storage`
+  - `boards/espressif/esp32_p4_function_ev/` — 目标板级配置（引脚 / 外设 YAML）
+  - `tools/` — `gen_ui_screens.py`（UI 生成）、`img2epd.py`（图片转墨水屏）、`gen_time_clips_wav.py`
+  - `fatfs_image/` — SD 卡镜像
+- `components/` — ESP-Claw 框架的 Lua 模块（camera / audio / epaper / storage …）
+- `docs/`、`.agents/` — 框架文档与开发规范
+- `logs/` — AI Coding 日志
+- `application/edge_agent/README.md` — 详细使用与移植指南
 
-<table align="center">
-  <tr>
-    <th><div align="center"> 💬 Chat as Creation </div></th>
-    <th><div align="center"> ⚙️ Event Driven </div></th>
-  </tr>
-  <tr>
-    <th>
-      <div align="center">
-        IM chat + dynamic Lua loading
-        <br />
-        Ordinary users can define device behavior without programming
-      </div>
-    </th>
-    <th>
-      <div align="center">
-        Any event can trigger the Agent Loop and more
-        <br />
-        Response can be as fast as milliseconds
-      </div>
-    </th>
-  </tr>
-  <tr>
-    <th width="45%">
-      <video src="https://github.com/user-attachments/assets/717a4dae-fbd3-4364-afca-2d45432f156e" />
-    </th>
-    <th width="45%">
-      <video src="https://github.com/user-attachments/assets/5a274a4a-e1dc-4c13-81aa-fb1c22d470bf" />
-    </th>
-  </tr>
+## 四、运行方式
 
-  <tr>
-    <td colspan="2"><!-- spacer row --></td>
-  </tr>
+> 说明：本作品基于 **ESP-IDF**（非 openvela 的 NuttX 体系），**无法**用 openvela 工作区的
+> `./build.sh` 编译，需用 ESP-IDF 环境构建。完整步骤见 `application/edge_agent/README.md`，摘要：
 
-  <tr>
-    <th><div align="center"> 🧬 Structured Memory </div></th>
-    <th><div align="center"> 📤 MCP Communication </div></th>
-  </tr>
-  <tr>
-    <th>
-      <div align="center">
-        Organize memories in a structured way
-        <br />
-        Privacy stays off the cloud
-      </div>
-    </th>
-    <th>
-      <div align="center">
-        Supports standard MCP devices
-        <br />
-        Works as both Server and Client
-      </div>
-    </th>
-  </tr>
-  <tr>
-    <th width="45%">
-      <video src="https://github.com/user-attachments/assets/2c8bcaa4-3606-49d3-9b70-86ad3234d48f" />
-    </th>
-    <th width="45%">
-      <video src="https://github.com/user-attachments/assets/b1f71cee-e428-4b92-ad7e-d7816839f866" />
-    </th>
-  </tr>
+1. 环境：ESP-IDF v6.1-beta1（Windows PowerShell）
+2. 选板：`idf.py bmgr -c ./boards -b esp32_p4_function_ev`
+3. 配置：`idf.py menuconfig` 填入 DeepSeek API Key / 模型 / IM / 时区
+4. 编译：`idf.py build`
+5. 烧录：`idf.py -p COM3 flash`
+6. 使用：浏览器打开 `http://<板子IP>`（Web IM），对 AI 说「显示今天天气」「记录一个日程」等
 
-  <tr>
-    <td colspan="2"><!-- spacer row --></td>
-  </tr>
+## 五、AI Coding 使用说明
 
-  <tr>
-    <th><div align="center"> 🧰 Ready Out of the Box </div></th>
-    <th><div align="center"> 🧩 Component Extensibility </div></th>
-  </tr>
-  <tr>
-    <th>
-      <div align="center">
-        Quick setup with Board Manager
-        <br />
-        Supports one-click flashing
-      </div>
-    </th>
-    <th>
-      <div align="center">
-        Every module can be trimmed as needed
-        <br />
-        You can also add your own component integrations
-      </div>
-    </th>
-  </tr>
-</table>
+本作品全程借助 **Claude Code** 辅助开发：
 
-## 📦 Quick Start
+- **方案设计**：外设移植（墨水屏 bit-bang SPI、Lua 模块 + skill 五处登记范式）由 AI 梳理
+- **编码**：`ui_screens.c` 墨水屏 UI、各 skill 的 Lua 脚本由 AI 生成与联调
+- **调试**：Kconfig `default n` 陷阱、组件管理器 rules 缓存、C++ Lua 头缺 `extern "C"` 等由 AI 定位修复
+- **文档**：`application/edge_agent/README.md` 使用指南由 AI 整理
 
-<div align="center">
-  <img src="docs/src/assets/images/claw-breadboard-photo.jpg" width="80%" alt="ESP-Claw on ESP32-S3 Breadboard" />
-</div>
-
-ESP-Claw now supports a wide range of development boards based on ESP32-S3, ESP32-P4, ESP32-C5, and ESP32-S31, including breadboards, M5Stack CoreS3, and many others. Supported boards in [`./application/edge_agent/boards/`](./application/edge_agent/boards/) can be flashed online directly: configuration and flashing are done entirely in the browser, with no need to compile firmware locally or install a development environment first.
-
-<div align="center">
-  <a href="https://esp-claw.com/en/flash/">
-    <img src="./docs/static/flash-via-browser-button.svg" width="200" />
-  </a>
-</div>
-
-You can also build ESP-Claw locally. Please refer to the [local build documentation](https://esp-claw.com/en/tutorial/) for board adaptation, building, and flashing. Boards not listed above, as well as chips like the ESP32-P4, can also be supported through local builds and flashing.
-
-You can find practical examples in our [documentation](https://esp-claw.com/en/tutorial/).
-
-### Supported Platforms
-
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./docs/static/claw-providers-white.webp" />
-    <source media="(prefers-color-scheme: light)" srcset="./docs/static/claw-providers-black.webp" />
-    <img alt="Supported Platforms" src="./docs/static/claw-providers-black.webp" width="90%" />
-  </picture>
-</div>
-
-**LLM**: ESP-Claw now supports both OpenAI-style APIs and Anthropic-style APIs. It natively supports GPT models from OpenAI, Qwen models from Alibaba Cloud Bailian, Claude models from Anthropic, DeepSeek models from DeepSeek API, and also supports custom endpoints.
-
-> [!TIP]
->
-> ESP-Claw's self-programming capability depends on models with strong tool use and instruction-following ability. We recommend `gpt-5.4`, `qwen3.6-plus`, `claude4.6-sonnet`, `deepseek-v4-pro` or models with comparable capability.
-
-**IM**: ESP-Claw supports Telegram, QQ, Feishu, and WeChat, and can be extended further.
-
-## Development Plan
-
-ESP-Claw is still under active development. Feel free to open an issue to report problems or request features. You can also share your ideas through our [online survey (in Chinese)](https://fcn5wbhnyubf.feishu.cn/share/base/form/shrcndYcjbGFY1ymttTSyYoGIPh).
-
-[Click here to view our TODO List (in Chinese)](https://fcn5wbhnyubf.feishu.cn/wiki/SRlgwWUYei4WmykU8uMcUtzTnFf?table=tblWSgzWcyW7jv7B&view=vewaP9B0KX) and vote for the features or issues you care about. That helps us prioritize them sooner.
-
-## Security
-
-ESP-Claw is not currently included in the Espressif Bug Bounty Program. Responsible vulnerability reports remain highly valued, but no monetary reward is promised or guaranteed under this policy.
-
-## 📷 Follow Us
-
-If this project helps you, please consider giving it a star. ⭐⭐⭐⭐⭐
-
-### Star History
-
-<div align="center">
-  <a href="https://www.star-history.com/?repos=espressif%2Fesp-claw&type=date&legend=top-left">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&legend=top-left" />
-  </picture>
-  </a>
-</div>
-
-## Acknowledgements
-
-Inspired by [OpenClaw](https://github.com/openclaw/openclaw).
-
-The implementation of Agent Loop, IM communication, and related capabilities on ESP32 also draws on [MimiClaw](https://github.com/memovai/mimiclaw).
+AI 显著缩短了从「点亮外设」到「智能工卡」的迭代周期。完整对话日志见 `logs/`。
