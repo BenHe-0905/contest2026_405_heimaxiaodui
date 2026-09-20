@@ -1,0 +1,18 @@
+idf_component_register(
+    SRCS
+        "src/DEV_Config.cpp"
+        "src/EPD_3in5g_V2.cpp"
+        "src/epaper_text.cpp"
+        "src/font8.cpp"
+        "src/font16.cpp"
+        "src/font24.cpp"
+        "src/lua_module_epaper.cpp"
+    INCLUDE_DIRS
+        "src"
+    REQUIRES
+        cap_lua
+        esp_driver_gpio
+        freertos
+        heap
+        lua_module_image
+)
