@@ -1,148 +1,201 @@
-# contest2026_405_heimaxiaodui
+<div align="center">
 
-👋 欢迎参加 **2026 首届 openvela AI 硬件开发者大赛**！
+  <a href="https://esp-claw.com/en/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./docs/src/assets/logos/logo-f.svg" />
+      <source media="(prefers-color-scheme: light)" srcset="./docs/src/assets/logos/logo.svg" />
+      <img alt="ESP-Claw logo" src="./docs/src/assets/logos/logo.svg" width="50%" />
+    </picture>
+  </a>
 
-这是组委会为你的队伍创建的**专属参赛仓库**（本仓为样例/模板，队伍编号 `405`；你看到的将是你自己的 `contest2026_<编号>_<队伍名>`）。比赛期间，你的全部参赛代码、打包产物与 AI Coding 日志都提交到这里。
+  <h1>ESP-Claw 🦞 AI Agent Framework for IoT Devices</h1>
 
-> 本仓既是「代码仓」，又内置了一键拉取整套 openvela 工程的 `repo` 清单（manifest）。你只需跟它打交道，**自始至终只动一个文件夹**。
+  <h3>💬 Chat as Creation · 🚀 Millisecond Response · 🧩 Smart and Extensible · 😋 Grows with You</h3>
 
----
+  <p>
+    <a href="https://www.espressif.com">
+      <img src="https://img.shields.io/badge/runs_on-ESP32_Series-red?style=flat-square" alt="Runs on ESP32 Series" />
+    </a>
+    <a href="./LICENSE">
+      <img src="https://img.shields.io/github/license/espressif/esp-claw?style=flat-square" alt="License" />
+    </a>
+  </p>
 
-## 一、先读这些官方文档
+  <a href="https://esp-claw.com/en/">Home</a>
+  |
+  <a href="https://esp-claw.com/en/tutorial/">Docs</a>
+  |
+  <a href="https://esp-claw.com/en/flash/">Online Flashing</a>
+  |
+  <a href="https://esp-claw.com/en/reference-project/build-from-source/">Build from Source</a>
+  |
+  <a href="./README_CN.md">简体中文</a>
 
-**通用（所有赛道必读）：**
+</div>
 
-| 文档                                                                                                                                     | 用途                                           |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [《大赛总览》](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/contest_overview.md)                        | 赛道、流程、评分、资源，建议先通读             |
-| [《参赛代码提交指南》](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/code_submission_guide.md)           | 仓库获取、提交流程、时间与权限（**以此为准**） |
-| [《AI Coding 日志归集与提交手册》](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/ai_coding_log_guide.md) | 如何导出 AI 对话日志并提交到 `logs/`           |
+**ESP-Claw** is Espressif's **Chat Coding** AI agent framework for IoT devices. It defines device behavior through conversation and completes the full loop of sensing, decision-making, and execution locally on Espressif chips. Inspired by the OpenClaw concept and reimplemented in C, ESP-Claw is lightweight, intelligent, and continuously evolving. With just an ESP32-series chip that costs only a few dollars, you can experience what makes ESP-Claw so nimble.
 
-**按你的赛道选读（三选一）：**
+<div align="center">
+  <img alt="From traditional IoT to Edge Agent" src="./docs/static/from-traditional-iot-to-edge-agent.webp" width="90%" />
+</div>
 
-| 赛道                  | 教程导航                                                                                                                                                 |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 快应用 / 手表应用创新 | [快应用教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/quickapp/quickapp_guide_index.md)                         |
-| AI 硬件产品创新       | [AI 硬件赛道教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/ai_hardware/ai_hardware_guide_index.md)              |
-| 新硬件适配            | [新硬件适配赛道教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/hardware_porting/hardware_porting_guide_index.md) |
+## 🌟 Key Features
 
----
+Traditional IoT usually stops at connectivity: devices can connect to the network, but they cannot think; they can execute commands, but they cannot make decisions. ESP-Claw brings the Agent Runtime down onto Espressif chips, turning them from passive executors into active decision-making centers.
 
-## 二、第一步：拉取完整工程
+<table align="center">
+  <tr>
+    <th><div align="center"> 💬 Chat as Creation </div></th>
+    <th><div align="center"> ⚙️ Event Driven </div></th>
+  </tr>
+  <tr>
+    <th>
+      <div align="center">
+        IM chat + dynamic Lua loading
+        <br />
+        Ordinary users can define device behavior without programming
+      </div>
+    </th>
+    <th>
+      <div align="center">
+        Any event can trigger the Agent Loop and more
+        <br />
+        Response can be as fast as milliseconds
+      </div>
+    </th>
+  </tr>
+  <tr>
+    <th width="45%">
+      <video src="https://github.com/user-attachments/assets/717a4dae-fbd3-4364-afca-2d45432f156e" />
+    </th>
+    <th width="45%">
+      <video src="https://github.com/user-attachments/assets/5a274a4a-e1dc-4c13-81aa-fb1c22d470bf" />
+    </th>
+  </tr>
 
-用组委会提供的命令一键拉取「openvela 全量源码 + 你的专属仓」：
+  <tr>
+    <td colspan="2"><!-- spacer row --></td>
+  </tr>
 
-```bash
-repo init -u https://github.com/open-vela/contest2026_405_heimaxiaodui \
-  -b dev-ai-contest-2026 -m contest2026_405_heimaxiaodui.xml
-repo sync -c -j8
-```
+  <tr>
+    <th><div align="center"> 🧬 Structured Memory </div></th>
+    <th><div align="center"> 📤 MCP Communication </div></th>
+  </tr>
+  <tr>
+    <th>
+      <div align="center">
+        Organize memories in a structured way
+        <br />
+        Privacy stays off the cloud
+      </div>
+    </th>
+    <th>
+      <div align="center">
+        Supports standard MCP devices
+        <br />
+        Works as both Server and Client
+      </div>
+    </th>
+  </tr>
+  <tr>
+    <th width="45%">
+      <video src="https://github.com/user-attachments/assets/2c8bcaa4-3606-49d3-9b70-86ad3234d48f" />
+    </th>
+    <th width="45%">
+      <video src="https://github.com/user-attachments/assets/b1f71cee-e428-4b92-ad7e-d7816839f866" />
+    </th>
+  </tr>
 
-同步后，你的整个仓库位于工作区的 `contest2026_405_heimaxiaodui/`，openvela 全量源码在外层（`nuttx/`、`apps/`、`packages/`、`vendor/` 等）。
+  <tr>
+    <td colspan="2"><!-- spacer row --></td>
+  </tr>
 
----
+  <tr>
+    <th><div align="center"> 🧰 Ready Out of the Box </div></th>
+    <th><div align="center"> 🧩 Component Extensibility </div></th>
+  </tr>
+  <tr>
+    <th>
+      <div align="center">
+        Quick setup with Board Manager
+        <br />
+        Supports one-click flashing
+      </div>
+    </th>
+    <th>
+      <div align="center">
+        Every module can be trimmed as needed
+        <br />
+        You can also add your own component integrations
+      </div>
+    </th>
+  </tr>
+</table>
 
-## 三、第二步：在哪里写代码
+## 📦 Quick Start
 
-**只在自己的仓目录 `contest2026_405_heimaxiaodui/` 里开发。** 不同作品形态放在对应子目录，manifest 会通过 `<linkfile>` 把它们**软链**到 openvela 编译树该在的位置——你不用手动 copy：
+<div align="center">
+  <img src="docs/src/assets/images/claw-breadboard-photo.jpg" width="80%" alt="ESP-Claw on ESP32-S3 Breadboard" />
+</div>
 
-| 作品形态 | 你的代码放这里             | 系统自动映射到                                 |
-| -------- | -------------------------- | ---------------------------------------------- |
-| 应用     | `app/hello_app/`           | `packages/demos/contest2026_405_hello_app`     |
-| 快应用   | `quickapp/hello_quickapp/` | `packages/apps/contest2026_405_hello_quickapp` |
-| 板级适配 | `board/contest_board/`     | `vendor/openvela/boards/contest2026_405_board` |
+ESP-Claw now supports a wide range of development boards based on ESP32-S3, ESP32-P4, ESP32-C5, and ESP32-S31, including breadboards, M5Stack CoreS3, and many others. Supported boards in [`./application/edge_agent/boards/`](./application/edge_agent/boards/) can be flashed online directly: configuration and flashing are done entirely in the browser, with no need to compile firmware locally or install a development environment first.
 
-> 用不到的形态目录可以删掉；新增作品时按同样规则加子目录，并在 `contest2026_405_heimaxiaodui.xml` 里补一条 `<linkfile>` 映射即可。**生产仓库（packages/nuttx/vendor 等）零改动。**
+<div align="center">
+  <a href="https://esp-claw.com/en/flash/">
+    <img src="./docs/static/flash-via-browser-button.svg" width="200" />
+  </a>
+</div>
 
-建议仓库目录约定（便于评委定位）：
+You can also build ESP-Claw locally. Please refer to the [local build documentation](https://esp-claw.com/en/tutorial/) for board adaptation, building, and flashing. Boards not listed above, as well as chips like the ESP32-P4, can also be supported through local builds and flashing.
 
-```text
-app/ | quickapp/ | board/   # 你的作品代码
-logs/                       # AI Coding 日志（主动导出后提交，格式见 logs/README.md）
-README.md                   # 作品说明（提交前请改成你自己的，见第六节）
-```
+You can find practical examples in our [documentation](https://esp-claw.com/en/tutorial/).
 
-> 仓内附带了一个 `.gitignore.example`，给出了**编译产物**等不需要进仓的文件示例。如需启用，`cp .gitignore.example .gitignore` 后按需增删即可。**注意 `logs/` 下最终导出的 AI Coding 日志必须提交，不要忽略。**
+### Supported Platforms
+
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/static/claw-providers-white.webp" />
+    <source media="(prefers-color-scheme: light)" srcset="./docs/static/claw-providers-black.webp" />
+    <img alt="Supported Platforms" src="./docs/static/claw-providers-black.webp" width="90%" />
+  </picture>
+</div>
+
+**LLM**: ESP-Claw now supports both OpenAI-style APIs and Anthropic-style APIs. It natively supports GPT models from OpenAI, Qwen models from Alibaba Cloud Bailian, Claude models from Anthropic, DeepSeek models from DeepSeek API, and also supports custom endpoints.
+
+> [!TIP]
 >
-> `logs/` 的目录结构与提交格式见 [logs/README.md](logs/README.md)。
+> ESP-Claw's self-programming capability depends on models with strong tool use and instruction-following ability. We recommend `gpt-5.4`, `qwen3.6-plus`, `claude4.6-sonnet`, `deepseek-v4-pro` or models with comparable capability.
 
----
+**IM**: ESP-Claw supports Telegram, QQ, Feishu, and WeChat, and can be extended further.
 
-## 四、第三步：编译与运行
+## Development Plan
 
-编译/运行步骤随作品形态不同而不同，请参考你所在赛道的教程导航：
+ESP-Claw is still under active development. Feel free to open an issue to report problems or request features. You can also share your ideas through our [online survey (in Chinese)](https://fcn5wbhnyubf.feishu.cn/share/base/form/shrcndYcjbGFY1ymttTSyYoGIPh).
 
-- 快应用 / 手表应用：[快应用教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/quickapp/quickapp_guide_index.md)（含模拟器与开发板部署）。
-- AI 硬件产品创新：[AI 硬件赛道教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/ai_hardware/ai_hardware_guide_index.md)（环境搭建、编译烧录、Skill 开发）。
-- 新硬件适配：[新硬件适配赛道教程导航](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/hardware_porting/hardware_porting_guide_index.md)（BSP 移植、最小 NSH 基线）。
+[Click here to view our TODO List (in Chinese)](https://fcn5wbhnyubf.feishu.cn/wiki/SRlgwWUYei4WmykU8uMcUtzTnFf?table=tblWSgzWcyW7jv7B&view=vewaP9B0KX) and vote for the features or issues you care about. That helps us prioritize them sooner.
 
-子目录已通过 manifest 中的 `<linkfile>` 软链进 openvela 编译树，因此构建在 openvela 工作区**根目录**（即你这个仓的上一级）进行。openvela 使用 `build.sh` 作为统一入口，接收一个 **board config 路径**作为参数：
+## Security
 
-```bash
-# 进入 openvela 工作区根目录（你的仓的上一级）
-cd ..
+ESP-Claw is not currently included in the Espressif Bug Bounty Program. Responsible vulnerability reports remain highly valued, but no monetary reward is promised or guaranteed under this policy.
 
-# 通用语法：第一个参数是 board config 路径，第二个参数可以是 menuconfig / distclean 等
-./build.sh <board-config-path> [menuconfig|distclean] [-j8]
-```
+## 📷 Follow Us
 
-> 具体的 board config 路径、目标产物、模拟器/真机部署方式请以你所在赛道的教程导航为准。本仓 `app/` `quickapp/` `board/` 三个示例骨架对应的 Kconfig 选项可通过 `menuconfig` 启用。
+If this project helps you, please consider giving it a star. ⭐⭐⭐⭐⭐
 
----
+### Star History
 
-## 五、第四步：提交作品
+<div align="center">
+  <a href="https://www.star-history.com/?repos=espressif%2Fesp-claw&type=date&legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&theme=dark&legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&legend=top-left" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=espressif/esp-claw&type=date&legend=top-left" />
+  </picture>
+  </a>
+</div>
 
-1. **fork** 你的专属仓 → 开发 → `git commit` 并推送 → 向专属仓发起 **Pull Request**，可**自行 review 并合入**（无需等组委会）。
-2. **AI Coding 日志**：与 AI 工具的对话会自动记录到本机 staging（不会自动上传），需你**主动导出/打包**选定会话到仓内 `logs/` 目录后一并提交。详见[《AI Coding 日志归集与提交手册》](https://github.com/open-vela/docs/blob/dev-ai-contest-2026/zh-cn/contest_2026/ai_coding_log_guide.md)。
-3. 若需改动 **nuttx 等公共仓库**，不在本仓改，而是 fork 对应公共仓、以 PR 提交到 `dev-ai-contest-2026` 分支，由组委会 review 后合入。
+## Acknowledgements
 
-> ⏰ **提交作品截止：9 月 20 日**。截止后统一收回 push 权限，仍可查看 / clone。
->
-> 获奖后再按要求将作品 PR 至 openvela 上游对应仓库（走标准 PR + CI 流程）。
+Inspired by [OpenClaw](https://github.com/openclaw/openclaw).
 
-### 关于 PR 与 CLA
-
-- 本仓所有改动通过 **Pull Request** 合入（分支保护强制，可自行合入自己的 PR）。
-- 首次贡献需在[**官网签署 CLA**](https://openvela.com/#/community/cla)；PR 上会自动跑 `cla/signature` 检查，在官网签署成功后，在 PR 评论 `/check-cla` 复检即可通过。
-
----
-
-## 六、提交前：把本 README 改成你的作品说明
-
-本文件目前是组委会给的**使用说明书**。**作品提交前，请把它替换成你自己作品的说明**，方便评委快速了解你做了什么、怎么跑起来。建议至少包含以下内容：
-
-```markdown
-# <你的作品名>
-
-## 一、作品简介
-<一句话/一段话说明这个作品是什么、解决什么问题、亮点在哪>
-
-## 二、选题方向
-<快应用 / 手表应用创新 ｜ AI 硬件产品创新 ｜ 新硬件适配 ｜ 自定方向，并简述理由>
-
-## 三、目录结构
-<列出你这个仓里各目录/文件的作用，例如：>
-- `app/xxx/`        — <说明>
-- `board/xxx/`      — <说明>
-- `quickapp/xxx/`   — <说明>
-- `logs/`           — AI Coding 日志
-- `docs/` 或其他    — <说明>
-
-## 四、运行方式
-<拉取工程后，如何编译、烧录/部署、运行的完整步骤；最好能让评委照着一步步复现>
-
-## 五、AI Coding 使用说明
-<说明本作品如何借助 AI 辅助开发：
-- 在需求拆解 / 方案设计 / 编码 / 调试 / 文档等环节如何与 AI 协作；
-- AI 对开发效率或质量带来的实际帮助。
-完整对话日志见 logs/ 目录>
-```
-
-> 提示：将会根据「作品本身 + 你的 README 说明 + `logs/` 里的 AI Coding 日志」来理解和评估你的作品，README 写清楚很重要。
-
----
-
-## 附：仓库命名规范
-
-`contest2026_<编号>_<队伍名>` — 编号三位零填充；队名 slug（全小写、英文/拼音、连字符）。例：`contest2026_405_heimaxiaodui`。
-（仓库由组委会统一创建，**每队仅一个仓**，无需自行命名。）
+The implementation of Agent Loop, IM communication, and related capabilities on ESP32 also draws on [MimiClaw](https://github.com/memovai/mimiclaw).
